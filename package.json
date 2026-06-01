@@ -1,0 +1,28 @@
+{
+  "name": "agent-zero",
+  "version": "1.0.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rslib",
+    "check": "biome check --write",
+    "dev": "rslib --watch",
+    "format": "biome format --write"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.14",
+    "@rslib/core": "^0.22.0",
+    "@types/node": "^24.12.4",
+    "typescript": "^6.0.3"
+  },
+  "private": true
+}
