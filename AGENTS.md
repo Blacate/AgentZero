@@ -6,6 +6,7 @@ You are an expert in JavaScript, Rspack, Rsbuild, Rslib, and library development
 
 - `pnpm run build` - Build the library for production
 - `pnpm run dev` - Turn on watch mode, watch for changes and rebuild the library
+- `pnpm run test` - Run unit tests with Rstest
 
 ## Docs
 
@@ -19,6 +20,12 @@ You are an expert in JavaScript, Rspack, Rsbuild, Rslib, and library development
 
 - Run `pnpm run lint` to lint your code
 - Run `pnpm run format` to format your code
+
+### Testing
+
+- Use **Rstest** (`rstest`) as the unit test framework
+- Use **`@rstest/adapter-rslib`** to integrate with Rslib config
+- Write test files in `tests/` directory with `.test.ts` suffix
 
 ## Principles
 
