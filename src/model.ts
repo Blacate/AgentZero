@@ -41,7 +41,7 @@ export class Model {
     tools?: ToolDefinition[],
   ): Promise<ChatMessage> {
     const response = await fetch(
-      `${this.config.baseURL.replace(/\/$/, '')}/v1/chat/completions`,
+      `${this.config.baseURL.replace(/\/$/, '')}/chat/completions`,
       {
         method: 'POST',
         headers: {

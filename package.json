@@ -16,12 +16,16 @@
     "build": "rslib",
     "check": "biome check --write",
     "dev": "rslib --watch",
-    "format": "biome format --write"
+    "format": "biome format --write",
+    "test": "rstest run"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.14",
     "@rslib/core": "^0.22.0",
+    "@rstest/adapter-rslib": "^0.10.3",
+    "@rstest/core": "^0.10.3",
     "@types/node": "^24.12.4",
+    "dotenv": "^17.4.2",
     "typescript": "^6.0.3"
   },
   "private": true,
