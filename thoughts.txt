@@ -1,0 +1,8 @@
+1. 实现 abstract Tool
+2. 实现基本的 Tool： Write Read Edit WebFetch Grep Glob
+3. hook 机制
+4. tool 的参数定义 zod schema
+5. llm 日志
+6. acp 支持
+7. resume 机制，是否要引入 sqlite？
+8. mcp 支持
