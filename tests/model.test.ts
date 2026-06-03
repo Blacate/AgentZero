@@ -163,10 +163,11 @@ describe('Model', () => {
   it('should make real API call', async () => {
     const baseURL = process.env.API_BASE_URL;
     const apiKey = process.env.API_KEY;
+    const modelName = process.env.MODEL;
 
-    if (!baseURL || !apiKey) {
+    if (!baseURL || !apiKey || !modelName) {
       rs.setConfig({ testTimeout: 5000 });
-      throw new Error('Skip: API_BASE_URL or API_KEY not set in .env');
+      throw new Error('Skip: API_BASE_URL, API_KEY, or MODEL not set in .env');
     }
 
     rs.setConfig({ testTimeout: 30000 });
@@ -174,7 +175,7 @@ describe('Model', () => {
     const model = new Model({
       apiKey,
       baseURL,
-      model: 'moonshot-v1-8k',
+      model: modelName,
     });
 
     const result = await model.invoke([
