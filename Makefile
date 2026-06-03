@@ -6,4 +6,4 @@ update:
 	@echo "Fetching from origin..."
 	@git fetch origin
 	@echo "Merging origin/main into current branch..."
-	@git merge origin/main
+	@git merge --no-edit origin/main
