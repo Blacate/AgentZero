@@ -6,3 +6,5 @@
 6. acp 支持
 7. resume 机制，是否要引入 sqlite？
 8. mcp 支持
+9. 图片支持
+10. cwd 问题
