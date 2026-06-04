@@ -4,6 +4,8 @@ You are an expert in JavaScript, Rspack, Rsbuild, Rslib, and library development
 
 ## Commands
 
+本项目使用 **pnpm** 作为包管理器。
+
 - `pnpm run build` - Build the library for production
 - `pnpm run dev` - Turn on watch mode, watch for changes and rebuild the library
 - `pnpm run test` - Run unit tests with Rstest
