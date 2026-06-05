@@ -1,17 +1,20 @@
 import { describe, expect, it, rs } from '@rstest/core';
+import { z } from 'zod';
 import { AgentLoop } from '../src/agent-loop.js';
 import type { ChatMessage, Model, ToolDefinition } from '../src/model.js';
-import type { Tool } from '../src/agent-loop.js';
+import { Tool } from '../src/tools/tool.js';
 
 function createMockModel(
   responses: ChatMessage[],
 ): Model & { invoke: typeof rs.fn } {
   let index = 0;
-  const invoke = rs.fn(async (_messages: ChatMessage[], _tools?: ToolDefinition[]) => {
-    const res = responses[index];
-    index += 1;
-    return res;
-  });
+  const invoke = rs.fn(
+    async (_messages: ChatMessage[], _tools?: ToolDefinition[]) => {
+      const res = responses[index];
+      index += 1;
+      return res;
+    },
+  );
 
   return {
     invoke,
@@ -20,9 +23,7 @@ function createMockModel(
 
 describe('AgentLoop', () => {
   it('should return assistant response without tools', async () => {
-    const model = createMockModel([
-      { role: 'assistant', content: 'Hello!' },
-    ]);
+    const model = createMockModel([{ role: 'assistant', content: 'Hello!' }]);
 
     const agent = new AgentLoop({ model });
     const result = await agent.run('Hi');
@@ -32,9 +33,7 @@ describe('AgentLoop', () => {
   });
 
   it('should prepend system prompt when provided', async () => {
-    const model = createMockModel([
-      { role: 'assistant', content: 'OK' },
-    ]);
+    const model = createMockModel([{ role: 'assistant', content: 'OK' }]);
 
     const agent = new AgentLoop({
       model,
@@ -44,24 +43,22 @@ describe('AgentLoop', () => {
     await agent.run('Hi');
 
     const [messages] = model.invoke.mock.calls[0];
-    expect(messages[0]).toEqual({ role: 'system', content: 'You are helpful.' });
+    expect(messages[0]).toEqual({
+      role: 'system',
+      content: 'You are helpful.',
+    });
     expect(messages[1]).toEqual({ role: 'user', content: 'Hi' });
   });
 
   it('should execute tool and continue loop', async () => {
     const toolExecute = rs.fn(async () => 'Sunny');
 
-    const tool: Tool = {
-      definition: {
-        type: 'function',
-        function: {
-          name: 'getWeather',
-          description: 'Get weather',
-          parameters: { type: 'object', properties: {} },
-        },
-      },
-      execute: toolExecute,
-    };
+    const tool = new Tool({
+      name: 'getWeather',
+      description: 'Get weather',
+      schema: z.object({ city: z.string() }),
+      run: toolExecute,
+    });
 
     const model = createMockModel([
       {
@@ -114,24 +111,21 @@ describe('AgentLoop', () => {
 
     expect(result).toBe('Sorry.');
     const [secondMessages] = model.invoke.mock.calls[1];
-    const toolMessage = secondMessages.find((m: ChatMessage) => m.role === 'tool');
+    const toolMessage = secondMessages.find(
+      (m: ChatMessage) => m.role === 'tool',
+    );
     expect(toolMessage?.content).toBe('Tool "missingTool" not found');
   });
 
   it('should handle tool execution error', async () => {
-    const tool: Tool = {
-      definition: {
-        type: 'function',
-        function: {
-          name: 'badTool',
-          description: 'Bad tool',
-          parameters: { type: 'object', properties: {} },
-        },
-      },
-      execute: () => {
+    const tool = new Tool({
+      name: 'badTool',
+      description: 'Bad tool',
+      schema: z.object({}),
+      run: () => {
         throw new Error('Oops');
       },
-    };
+    });
 
     const model = createMockModel([
       {
@@ -156,26 +150,21 @@ describe('AgentLoop', () => {
 
     expect(result).toBe('Failed.');
     const [secondMessages] = model.invoke.mock.calls[1];
-    const toolMessage = secondMessages.find((m: ChatMessage) => m.role === 'tool');
+    const toolMessage = secondMessages.find(
+      (m: ChatMessage) => m.role === 'tool',
+    );
     expect(toolMessage?.content).toBe('Oops');
   });
 
   it('should pass tool definitions to model', async () => {
-    const model = createMockModel([
-      { role: 'assistant', content: 'Done' },
-    ]);
+    const model = createMockModel([{ role: 'assistant', content: 'Done' }]);
 
-    const tool: Tool = {
-      definition: {
-        type: 'function',
-        function: {
-          name: 'echo',
-          description: 'Echo',
-          parameters: { type: 'object', properties: {} },
-        },
-      },
-      execute: (args) => String(args),
-    };
+    const tool = new Tool({
+      name: 'echo',
+      description: 'Echo',
+      schema: z.object({}),
+      run: (args) => String(args),
+    });
 
     const agent = new AgentLoop({ model, tools: [tool] });
     await agent.run('Hello');

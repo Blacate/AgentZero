@@ -39,9 +39,7 @@ describe('Model', () => {
       model: 'test-model',
     });
 
-    const result = await model.invoke([
-      { role: 'user', content: 'Hi' },
-    ]);
+    const result = await model.invoke([{ role: 'user', content: 'Hi' }]);
 
     expect(result).toEqual({
       role: 'assistant',
