@@ -29,6 +29,7 @@ You are an expert in JavaScript, Rspack, Rsbuild, Rslib, and library development
 - Use **Rstest** (`rstest`) as the unit test framework
 - Use **`@rstest/adapter-rslib`** to integrate with Rslib config
 - Write test files in `tests/` directory with `.test.ts` suffix
+- **修改 `src/` 代码时，必须同步更新或补充对应的单元测试，确保测试通过后再提交**
 
 ## Principles
 

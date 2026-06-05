@@ -13,10 +13,10 @@ export const webFetchTool = new Tool({
   }),
   run: async ({ url, maxLength }) => {
     const res = await fetch(url);
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status} ${res.statusText}`);
-    }
     let text = await res.text();
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status} ${res.statusText}\n\n${text}`);
+    }
     const limit = maxLength ?? 200_000;
     if (text.length > limit) {
       text = `${text.slice(0, limit)}\n... (truncated, ${text.length} total)`;

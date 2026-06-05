@@ -12,6 +12,7 @@ export const readTool = new Tool({
     limit: z.number().optional().describe('Max lines to read'),
   }),
   run: async ({ path, offset, limit }) => {
+    // TODO: 改用 node:readline 流式按行读取，避免大文件一次性载入内存
     const content = await readFile(path, 'utf-8');
     const lines = content.split('\n');
     const start = offset ? Math.max(0, offset - 1) : 0;
