@@ -59,14 +59,33 @@ This chapter must be completed before moving to technical details.
 - All Clarification Questions are answered and marked ✅ in the "Review Status" column
 - The user has explicitly confirmed that Chapter 1 is complete
 
-Only after the above conditions are met, proceed to write Chapter 2. Cover the topics relevant to your task (skip irrelevant ones):
+Only after the above conditions are met, proceed to write Chapter 2. Cover the topics relevant to your task (skip irrelevant ones).
+
+**每个子章节必须补充对应的单测 case 说明**：对涉及可测试逻辑的部分，列出应编写的具体测试 case（输入、预期输出/行为、覆盖场景）。
 
 1. **Design Overview** — high-level architecture or data flow
+   - 对核心数据流或状态转换，列出 2–3 个关键测试 case（如：正常流转、异常分支、边界条件）
+
 2. **File Changes** — specific files to create, modify, or delete
+   - 对每个修改/新增文件，列出该文件对应的单测 case（如：新增模块 `X.ts` → 测试 `X.test.ts` 覆盖 case A/B/C）
+
 3. **Interface / API Design** — new or changed function signatures, types, or public APIs
+   - 对每个 public 函数或接口，列出具体测试 case：
+     - 输入参数组合（正常值、边界值、非法值）
+     - 预期返回值或抛出的异常
+     - 副作用验证（如状态变更、事件触发）
+
 4. **Implementation Steps** — ordered checklist of concrete tasks
+   - 每个步骤若涉及逻辑实现，标注对应单测 case 编号或描述
+   - 形式示例：`Step 3: 实现重试逻辑 → 测试 case: 重试 3 次后成功、重试耗尽后抛异常`
+
 5. **Testing Strategy** — what to test and how (if applicable)
+   - 汇总全量测试 case，按模块或文件分组
+   - 标注每个 case 的测试类型（单元测试 / 集成测试）
+   - 说明 mock 策略（外部依赖、I/O、时间等）
+
 6. **Risks & Mitigations** — known risks and how to handle them (optional for MVP)
+   - 若风险涉及可测试的兜底逻辑，补充对应的回归测试 case
 
 ## Guidelines
 

@@ -1,20 +1,17 @@
-import type { ChatMessage, Model, ToolDefinition } from './model.js';
-
-export interface Tool {
-  definition: ToolDefinition;
-  execute: (args: Record<string, unknown>) => Promise<string> | string;
-}
+import type { z } from 'zod';
+import type { ChatMessage, Model } from './model.js';
+import type { Tool } from './tools/tool.js';
 
 export interface AgentLoopConfig {
   model: Model;
   systemPrompt?: string;
-  tools?: Tool[];
+  tools?: Tool<z.ZodSchema>[];
 }
 
 export class AgentLoop {
   private model: Model;
   private systemPrompt?: string;
-  private tools: Tool[];
+  private tools: Tool<z.ZodSchema>[];
 
   constructor(config: AgentLoopConfig) {
     this.model = config.model;
