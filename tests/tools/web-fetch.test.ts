@@ -19,7 +19,7 @@ describe('webFetchTool', () => {
     expect(mockFetch).toHaveBeenCalledWith('https://example.com');
   });
 
-  it('should return error with response body on HTTP error', async () => {
+  it('should throw error with response body on HTTP error', async () => {
     const mockFetch = rs.fn<typeof fetch>(() =>
       Promise.resolve({
         ok: false,
@@ -31,10 +31,11 @@ describe('webFetchTool', () => {
 
     rs.stubGlobal('fetch', mockFetch);
 
-    const result = await webFetchTool.execute({
-      url: 'https://example.com/missing',
-    });
-    expect(result).toBe('HTTP 404 Not Found\n\nPage not found');
+    await expect(
+      webFetchTool.execute({
+        url: 'https://example.com/missing',
+      }),
+    ).rejects.toThrow('HTTP 404 Not Found\n\nPage not found');
   });
 
   it('should truncate large responses', async () => {

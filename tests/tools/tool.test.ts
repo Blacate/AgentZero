@@ -32,7 +32,7 @@ describe('Tool', () => {
     expect(result).toBe('10');
   });
 
-  it('should return error message on invalid args', async () => {
+  it('should throw error on invalid args', async () => {
     const tool = new Tool({
       name: 'double',
       description: 'Double a number',
@@ -40,11 +40,10 @@ describe('Tool', () => {
       run: ({ n }) => String(n * 2),
     });
 
-    const result = await tool.execute({ n: 'five' });
-    expect(result).toContain('Invalid input');
+    await expect(tool.execute({ n: 'five' })).rejects.toThrow();
   });
 
-  it('should catch run function errors', async () => {
+  it('should throw run function errors', async () => {
     const tool = new Tool({
       name: 'fail',
       description: 'Always fails',
@@ -54,7 +53,6 @@ describe('Tool', () => {
       },
     });
 
-    const result = await tool.execute({});
-    expect(result).toBe('Intentional failure');
+    await expect(tool.execute({})).rejects.toThrow('Intentional failure');
   });
 });
