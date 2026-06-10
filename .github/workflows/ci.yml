@@ -31,5 +31,5 @@ jobs:
         run: pnpm run test
         env:
           MODEL: ${{ vars.MODEL }}
-          BASE_URL: ${{ vars.BASE_URL }}
+          API_BASE_URL: ${{ vars.BASE_URL }}
           API_KEY: ${{ secrets.API_KEY }}
