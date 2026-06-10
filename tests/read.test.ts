@@ -1,4 +1,4 @@
-import { mkdtemp, rmdir, writeFile } from 'node:fs/promises';
+import { mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from '@rstest/core';
@@ -13,7 +13,6 @@ describe('readTool', () => {
     const result = await readTool.execute({ path: filePath });
     expect(result).toBe('line1\nline2\nline3');
 
-    await rmdir(tmpDir, { recursive: true });
   });
 
   it('should slice with offset (1-based)', async () => {
@@ -24,7 +23,6 @@ describe('readTool', () => {
     const result = await readTool.execute({ path: filePath, offset: 2 });
     expect(result).toBe('b\nc\nd');
 
-    await rmdir(tmpDir, { recursive: true });
   });
 
   it('should slice with limit', async () => {
@@ -35,7 +33,6 @@ describe('readTool', () => {
     const result = await readTool.execute({ path: filePath, limit: 2 });
     expect(result).toBe('a\nb');
 
-    await rmdir(tmpDir, { recursive: true });
   });
 
   it('should slice with offset and limit together', async () => {
@@ -50,6 +47,5 @@ describe('readTool', () => {
     });
     expect(result).toBe('b\nc');
 
-    await rmdir(tmpDir, { recursive: true });
   });
 });

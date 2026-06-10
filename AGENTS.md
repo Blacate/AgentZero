@@ -30,6 +30,7 @@ You are an expert in JavaScript, Rspack, Rsbuild, Rslib, and library development
 - Use **`@rstest/adapter-rslib`** to integrate with Rslib config
 - Write test files in `tests/` directory with `.test.ts` suffix
 - **修改 `src/` 代码时，必须同步更新或补充对应的单元测试，确保测试通过后再提交**
+- 测试用例中创建的临时目录（通常在系统 `tmp` 目录下）**不需要手动清理**，避免在测试中使用删除目录的操作
 
 ## Principles
 

@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rmdir } from 'node:fs/promises';
+import { mkdtemp, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from '@rstest/core';
@@ -18,7 +18,6 @@ describe('writeTool', () => {
     const content = await readFile(filePath, 'utf-8');
     expect(content).toBe('hello');
 
-    await rmdir(tmpDir, { recursive: true });
   });
 
   it('should create parent directories automatically', async () => {
@@ -34,7 +33,6 @@ describe('writeTool', () => {
     const content = await readFile(filePath, 'utf-8');
     expect(content).toBe('nested content');
 
-    await rmdir(tmpDir, { recursive: true });
   });
 
   it('should overwrite existing file', async () => {
@@ -47,6 +45,5 @@ describe('writeTool', () => {
     const content = await readFile(filePath, 'utf-8');
     expect(content).toBe('second');
 
-    await rmdir(tmpDir, { recursive: true });
   });
 });
