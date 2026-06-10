@@ -1,8 +1,8 @@
 import { describe, expect, it, rs } from '@rstest/core';
 import { z } from 'zod';
-import { AgentLoop } from '../src/agent-loop.js';
-import type { ChatMessage, Model, ToolDefinition } from '../src/model.js';
-import { Tool } from '../src/tools/tool.js';
+import { AgentLoop } from '../../src/agent-loop.js';
+import type { ChatMessage, Model, ToolDefinition } from '../../src/model.js';
+import { Tool } from '../../src/tools/tool.js';
 
 function createMockModel(
   responses: ChatMessage[],

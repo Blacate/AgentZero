@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@rstest/core';
 import { z } from 'zod';
-import { Tool } from '../src/tools/tool.js';
+import { Tool } from '../../src/tools/tool.js';
 
 describe('Tool', () => {
   it('should generate definition from zod schema', () => {

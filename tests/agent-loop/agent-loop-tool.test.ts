@@ -1,8 +1,8 @@
 import { describe, expect, it } from '@rstest/core';
 import { z } from 'zod';
-import { AgentLoop } from '../src/agent-loop.js';
-import { Model } from '../src/model.js';
-import { Tool } from '../src/tools/tool.js';
+import { AgentLoop } from '../../src/agent-loop.js';
+import { Model } from '../../src/model.js';
+import { Tool } from '../../src/tools/tool.js';
 
 describe('AgentLoop with real model and tool', () => {
   it('should invoke tool through real model call', async () => {

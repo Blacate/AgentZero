@@ -1,5 +1,5 @@
 import { describe, expect, it, rs } from '@rstest/core';
-import { webFetchTool } from '../src/tools/web-fetch.js';
+import { webFetchTool } from '../../src/tools/web-fetch.js';
 
 describe('webFetchTool', () => {
   it('should fetch and return content', async () => {

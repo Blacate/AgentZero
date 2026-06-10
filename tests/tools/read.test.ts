@@ -2,7 +2,7 @@ import { mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from '@rstest/core';
-import { readTool } from '../src/tools/read.js';
+import { readTool } from '../../src/tools/read.js';
 
 describe('readTool', () => {
   it('should read entire file', async () => {
