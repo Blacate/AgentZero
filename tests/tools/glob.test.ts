@@ -2,7 +2,7 @@ import { mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from '@rstest/core';
-import { globTool } from '../src/tools/glob.js';
+import { globTool } from '../../src/tools/glob.js';
 
 describe('globTool', () => {
   it('should match files in current directory', async () => {

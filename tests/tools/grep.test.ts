@@ -2,7 +2,7 @@ import { mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from '@rstest/core';
-import { grepTool } from '../src/tools/grep.js';
+import { grepTool } from '../../src/tools/grep.js';
 
 describe('grepTool', () => {
   it('should find matching lines in a file', async () => {

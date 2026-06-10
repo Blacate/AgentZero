@@ -1,5 +1,5 @@
 import { describe, expect, it, rs } from '@rstest/core';
-import { Model } from '../src/model.js';
+import { Model } from '../../src/model.js';
 
 describe('Model', () => {
   it('should construct with config', () => {
