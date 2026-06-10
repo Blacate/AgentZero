@@ -1,21 +1,55 @@
-import type { execFile } from 'node:child_process';
-import { describe, it, rs } from '@rstest/core';
+import { mkdtemp, rmdir, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { describe, expect, it } from '@rstest/core';
+import { grepTool } from '../src/tools/grep.js';
 
 describe('grepTool', () => {
-  it('should call rg with correct arguments', async () => {
-    const mockExecFile = rs.fn<typeof execFile>((_cmd, _args, _opts, cb) => {
-      if (cb) cb(null, { stdout: 'file.ts:1:hello', stderr: '' }, '');
-      return undefined as unknown as ReturnType<typeof execFile>;
+  it('should find matching lines in a file', async () => {
+    const tmpDir = await mkdtemp(join(tmpdir(), 'grep-test-'));
+    const filePath = join(tmpDir, 'sample.ts');
+    await writeFile(filePath, 'const foo = 1;\nconst bar = 2;\n', 'utf-8');
+
+    const result = await grepTool.execute({
+      pattern: 'foo',
+      path: filePath,
     });
 
-    rs.stubGlobal('execFile', mockExecFile);
+    expect(result).toContain('foo');
+    expect(result).toContain('1:');
 
-    // We need to re-import or mock the module; since the tool uses execFile at module level,
-    // we can't easily stub it. Instead, let's test with a real file.
-    // For unit test, we'll test the integration with real rg if available.
+    await rmdir(tmpDir, { recursive: true });
   });
 
-  it('should return no matches message for empty result', async () => {
-    // This is best tested with a real rg call on an empty directory
+  it('should return no matches message for non-matching pattern', async () => {
+    const tmpDir = await mkdtemp(join(tmpdir(), 'grep-test-'));
+    const filePath = join(tmpDir, 'sample.ts');
+    await writeFile(filePath, 'const foo = 1;\n', 'utf-8');
+
+    const result = await grepTool.execute({
+      pattern: 'baz',
+      path: filePath,
+    });
+
+    expect(result).toBe('(no matches)');
+
+    await rmdir(tmpDir, { recursive: true });
+  });
+
+  it('should filter by glob pattern', async () => {
+    const tmpDir = await mkdtemp(join(tmpdir(), 'grep-test-'));
+    await writeFile(join(tmpDir, 'a.ts'), 'const x = 1;\n', 'utf-8');
+    await writeFile(join(tmpDir, 'b.js'), 'const x = 2;\n', 'utf-8');
+
+    const result = await grepTool.execute({
+      pattern: 'const x',
+      path: tmpDir,
+      glob: '*.ts',
+    });
+
+    expect(result).toContain('a.ts');
+    expect(result).not.toContain('b.js');
+
+    await rmdir(tmpDir, { recursive: true });
   });
 });

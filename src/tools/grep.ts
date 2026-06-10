@@ -17,7 +17,19 @@ export const grepTool = new Tool({
     const rgArgs = ['-n', '-e', pattern];
     if (globFilter) rgArgs.push('--glob', globFilter);
     rgArgs.push(path);
-    const { stdout } = await execFileAsync('rg', rgArgs);
-    return stdout || '(no matches)';
+    try {
+      const { stdout } = await execFileAsync('rg', rgArgs);
+      return stdout || '(no matches)';
+    } catch (error) {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'code' in error &&
+        error.code === 1
+      ) {
+        return '(no matches)';
+      }
+      throw error;
+    }
   },
 });
