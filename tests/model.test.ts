@@ -164,11 +164,8 @@ describe('Model', () => {
     const modelName = process.env.MODEL;
 
     if (!baseURL || !apiKey || !modelName) {
-      rs.setConfig({ testTimeout: 5000 });
       throw new Error('Skip: API_BASE_URL, API_KEY, or MODEL not set in .env');
     }
-
-    rs.setConfig({ testTimeout: 30000 });
 
     const model = new Model({
       apiKey,

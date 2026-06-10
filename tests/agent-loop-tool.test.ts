@@ -1,4 +1,4 @@
-import { describe, expect, it, rs } from '@rstest/core';
+import { describe, expect, it } from '@rstest/core';
 import { z } from 'zod';
 import { AgentLoop } from '../src/agent-loop.js';
 import { Model } from '../src/model.js';
@@ -11,11 +11,8 @@ describe('AgentLoop with real model and tool', () => {
     const modelName = process.env.MODEL;
 
     if (!baseURL || !apiKey || !modelName) {
-      rs.setConfig({ testTimeout: 5000 });
       throw new Error('Skip: API_BASE_URL, API_KEY, or MODEL not set in .env');
     }
-
-    rs.setConfig({ testTimeout: 60000 });
 
     const addTool = new Tool({
       name: 'add',
