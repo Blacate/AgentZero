@@ -1,4 +1,4 @@
-import { mkdtemp, rmdir, writeFile } from 'node:fs/promises';
+import { mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from '@rstest/core';
@@ -18,7 +18,6 @@ describe('grepTool', () => {
     expect(result).toContain('foo');
     expect(result).toContain('1:');
 
-    await rmdir(tmpDir, { recursive: true });
   });
 
   it('should return no matches message for non-matching pattern', async () => {
@@ -33,7 +32,6 @@ describe('grepTool', () => {
 
     expect(result).toBe('(no matches)');
 
-    await rmdir(tmpDir, { recursive: true });
   });
 
   it('should filter by glob pattern', async () => {
@@ -50,6 +48,5 @@ describe('grepTool', () => {
     expect(result).toContain('a.ts');
     expect(result).not.toContain('b.js');
 
-    await rmdir(tmpDir, { recursive: true });
   });
 });

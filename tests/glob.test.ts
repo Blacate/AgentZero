@@ -1,4 +1,4 @@
-import { mkdtemp, rmdir, writeFile } from 'node:fs/promises';
+import { mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from '@rstest/core';
@@ -17,7 +17,6 @@ describe('globTool', () => {
     expect(lines).toContain('a.txt');
     expect(lines).toContain('b.txt');
 
-    await rmdir(tmpDir, { recursive: true });
   });
 
   it('should return no matches message when empty', async () => {
@@ -26,6 +25,5 @@ describe('globTool', () => {
     const result = await globTool.execute({ pattern: '*.md', cwd: tmpDir });
     expect(result).toBe('(no matches)');
 
-    await rmdir(tmpDir, { recursive: true });
   });
 });
