@@ -1,63 +1,14 @@
 import type { z } from 'zod';
+import type {
+  AgentLoopHooks,
+  PostToolUseContext,
+  PostToolUseFailureContext,
+  PreToolUseContext,
+  StopContext,
+  UserPromptSubmitContext,
+} from './hooks/index.js';
 import type { ChatMessage, Model } from './model.js';
 import type { Tool } from './tools/tool.js';
-
-export interface UserPromptSubmitContext {
-  userMessage: string;
-  systemPrompt?: string;
-  messages: ChatMessage[];
-}
-
-export interface PreToolUseContext {
-  userMessage: string;
-  toolName: string;
-  args: Record<string, unknown>;
-  toolCallId: string;
-  messages: ChatMessage[];
-}
-
-export interface PostToolUseContext {
-  userMessage: string;
-  toolName: string;
-  args: Record<string, unknown>;
-  result: string;
-  toolCallId: string;
-  messages: ChatMessage[];
-}
-
-export interface PostToolUseFailureContext {
-  userMessage: string;
-  toolName: string;
-  args: Record<string, unknown>;
-  error: Error;
-  toolCallId: string;
-  messages: ChatMessage[];
-}
-
-export interface StopContext {
-  userMessage: string;
-  result: string;
-  messages: ChatMessage[];
-}
-
-export interface HookResult<TContext> {
-  context: TContext;
-  result?: string;
-}
-
-export interface AgentLoopHooks {
-  userPromptSubmit?(
-    ctx: UserPromptSubmitContext,
-  ): Promise<HookResult<UserPromptSubmitContext>>;
-  preToolUse?(ctx: PreToolUseContext): Promise<HookResult<PreToolUseContext>>;
-  postToolUse?(
-    ctx: PostToolUseContext,
-  ): Promise<HookResult<PostToolUseContext>>;
-  postToolUseFailure?(
-    ctx: PostToolUseFailureContext,
-  ): Promise<HookResult<PostToolUseFailureContext>>;
-  stop?(ctx: StopContext): Promise<HookResult<StopContext>>;
-}
 
 export interface AgentLoopConfig {
   model: Model;
@@ -77,7 +28,9 @@ async function executeHooks<TContext>(
     const hookFn = hook[method];
     if (hookFn) {
       const hookResult = await (
-        hookFn as (ctx: TContext) => Promise<HookResult<TContext>>
+        hookFn as (
+          ctx: TContext,
+        ) => Promise<{ context: TContext; result?: string }>
       )(context);
       context = hookResult.context;
       if (hookResult.result !== undefined) {
@@ -107,18 +60,26 @@ export class AgentLoop {
 
     // UserPromptSubmit hook
     if (this.hooks.length > 0) {
-      const { result } = await executeHooks(this.hooks, 'userPromptSubmit', {
-        userMessage,
-        systemPrompt: this.systemPrompt,
-        messages,
-      } as UserPromptSubmitContext);
+      const { context: ctx, result } = await executeHooks(
+        this.hooks,
+        'userPromptSubmit',
+        {
+          userMessage,
+          systemPrompt: this.systemPrompt,
+          messages,
+        } as UserPromptSubmitContext,
+      );
 
       if (result !== undefined) {
         return result;
       }
-    }
 
-    if (this.systemPrompt) {
+      userMessage = ctx.userMessage;
+
+      if (ctx.systemPrompt) {
+        messages.push({ role: 'system', content: ctx.systemPrompt });
+      }
+    } else if (this.systemPrompt) {
       messages.push({ role: 'system', content: this.systemPrompt });
     }
 

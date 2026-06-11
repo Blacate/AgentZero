@@ -46,3 +46,4 @@ You are an expert in JavaScript, Rspack, Rsbuild, Rslib, and library development
 ## Directory Conventions
 
 - `docs/plans/` — 用于存放相关的规划和设计文档
+- 当某个模块的类型定义较多时，应将类型拆分到单独的目录中，按模块分文件保存（如 `src/hooks/`）

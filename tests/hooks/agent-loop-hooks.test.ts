@@ -1,14 +1,14 @@
 import { describe, expect, it, rs } from '@rstest/core';
 import { z } from 'zod';
-import {
-  AgentLoop,
-  type AgentLoopHooks,
-  type PostToolUseContext,
-  type PostToolUseFailureContext,
-  type PreToolUseContext,
-  type StopContext,
-  type UserPromptSubmitContext,
-} from '../../src/agent-loop.js';
+import { AgentLoop } from '../../src/agent-loop.js';
+import type {
+  AgentLoopHooks,
+  PostToolUseContext,
+  PostToolUseFailureContext,
+  PreToolUseContext,
+  StopContext,
+  UserPromptSubmitContext,
+} from '../../src/hooks/index.js';
 import type { ChatMessage, Model, ToolDefinition } from '../../src/model.js';
 import { Tool } from '../../src/tools/tool.js';
 
@@ -396,5 +396,59 @@ describe('AgentLoop hooks', () => {
     const [messages] = model.invoke.mock.calls[0];
     expect(messages[0]).toEqual({ role: 'system', content: 'Injected' });
     expect(messages[1]).toEqual({ role: 'user', content: 'Hi' });
+  });
+
+  it('userPromptSubmit can adjust userMessage', async () => {
+    const model = createMockModel([{ role: 'assistant', content: 'Hello!' }]);
+    const hook: AgentLoopHooks = {
+      userPromptSubmit: async (ctx: UserPromptSubmitContext) => {
+        ctx.userMessage = 'Modified';
+        return { context: ctx };
+      },
+    };
+
+    const agent = new AgentLoop({ model, hooks: [hook] });
+    await agent.run('Hi');
+
+    const [messages] = model.invoke.mock.calls[0];
+    expect(messages[0]).toEqual({ role: 'user', content: 'Modified' });
+  });
+
+  it('userPromptSubmit can adjust systemPrompt', async () => {
+    const model = createMockModel([{ role: 'assistant', content: 'Hello!' }]);
+    const hook: AgentLoopHooks = {
+      userPromptSubmit: async (ctx: UserPromptSubmitContext) => {
+        ctx.systemPrompt = 'Custom system';
+        return { context: ctx };
+      },
+    };
+
+    const agent = new AgentLoop({ model, hooks: [hook] });
+    await agent.run('Hi');
+
+    const [messages] = model.invoke.mock.calls[0];
+    expect(messages[0]).toEqual({ role: 'system', content: 'Custom system' });
+    expect(messages[1]).toEqual({ role: 'user', content: 'Hi' });
+  });
+
+  it('userPromptSubmit can remove systemPrompt by setting undefined', async () => {
+    const model = createMockModel([{ role: 'assistant', content: 'Hello!' }]);
+    const hook: AgentLoopHooks = {
+      userPromptSubmit: async (ctx: UserPromptSubmitContext) => {
+        ctx.systemPrompt = undefined;
+        return { context: ctx };
+      },
+    };
+
+    const agent = new AgentLoop({
+      model,
+      systemPrompt: 'Original system',
+      hooks: [hook],
+    });
+    await agent.run('Hi');
+
+    const [messages] = model.invoke.mock.calls[0];
+    expect(messages).toHaveLength(1);
+    expect(messages[0]).toEqual({ role: 'user', content: 'Hi' });
   });
 });
