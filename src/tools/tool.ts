@@ -31,12 +31,8 @@ export class Tool<T extends z.ZodSchema> {
   }
 
   async execute(args: Record<string, unknown>): Promise<string> {
-    try {
-      const parsed = this.schema.parse(args);
-      const result = await this.runFn(parsed);
-      return result;
-    } catch (error) {
-      return error instanceof Error ? error.message : String(error);
-    }
+    const parsed = this.schema.parse(args);
+    const result = await this.runFn(parsed);
+    return result;
   }
 }

@@ -1,4 +1,13 @@
 export { AgentLoop, type AgentLoopConfig } from './agent-loop.js';
+export type {
+  AgentLoopHooks,
+  HookResult,
+  PostToolUseContext,
+  PostToolUseFailureContext,
+  PreToolUseContext,
+  StopContext,
+  UserPromptSubmitContext,
+} from './hooks/index.js';
 export {
   type ChatMessage,
   Model,
