@@ -451,4 +451,164 @@ describe('AgentLoop hooks', () => {
     expect(messages).toHaveLength(1);
     expect(messages[0]).toEqual({ role: 'user', content: 'Hi' });
   });
+
+  it('system prompt is injected only once across multiple run() calls', async () => {
+    const model = createMockModel([
+      { role: 'assistant', content: 'First' },
+      { role: 'assistant', content: 'Second' },
+    ]);
+
+    const agent = new AgentLoop({ model, systemPrompt: 'You are helpful' });
+    await agent.run('Hi');
+    await agent.run('Again');
+
+    const [secondMessages] = model.invoke.mock.calls[1];
+    const systemMessages = secondMessages.filter(
+      (m: ChatMessage) => m.role === 'system',
+    );
+    expect(systemMessages).toHaveLength(1);
+    expect(systemMessages[0]).toEqual({
+      role: 'system',
+      content: 'You are helpful',
+    });
+  });
+
+  it('postToolUse hooks execute in reverse order (onion model)', async () => {
+    const tool = new Tool({
+      name: 'echo',
+      description: 'Echo',
+      schema: z.object({ text: z.string() }),
+      run: async () => 'ToolResult',
+    });
+
+    const model = createMockModel([
+      {
+        role: 'assistant',
+        content: null,
+        tool_calls: [
+          {
+            id: 'call_1',
+            type: 'function',
+            function: {
+              name: 'echo',
+              arguments: JSON.stringify({ text: 'hello' }),
+            },
+          },
+        ],
+      },
+      { role: 'assistant', content: 'Done.' },
+    ]);
+
+    const order: string[] = [];
+    const hook1: AgentLoopHooks = {
+      postToolUse: async (ctx: PostToolUseContext) => {
+        order.push('hook1');
+        return { context: ctx };
+      },
+    };
+    const hook2: AgentLoopHooks = {
+      postToolUse: async (ctx: PostToolUseContext) => {
+        order.push('hook2');
+        return { context: ctx };
+      },
+    };
+
+    const agent = new AgentLoop({
+      model,
+      tools: [tool],
+      hooks: [hook1, hook2],
+    });
+    await agent.run('Test');
+
+    expect(order).toEqual(['hook2', 'hook1']);
+  });
+
+  it('postToolUseFailure hooks execute in reverse order (onion model)', async () => {
+    const tool = new Tool({
+      name: 'badTool',
+      description: 'Bad tool',
+      schema: z.object({}),
+      run: () => {
+        throw new Error('Oops');
+      },
+    });
+
+    const model = createMockModel([
+      {
+        role: 'assistant',
+        content: null,
+        tool_calls: [
+          {
+            id: 'call_1',
+            type: 'function',
+            function: {
+              name: 'badTool',
+              arguments: '{}',
+            },
+          },
+        ],
+      },
+      { role: 'assistant', content: 'Failed.' },
+    ]);
+
+    const order: string[] = [];
+    const hook1: AgentLoopHooks = {
+      postToolUseFailure: async (ctx: PostToolUseFailureContext) => {
+        order.push('hook1');
+        return { context: ctx };
+      },
+    };
+    const hook2: AgentLoopHooks = {
+      postToolUseFailure: async (ctx: PostToolUseFailureContext) => {
+        order.push('hook2');
+        return { context: ctx };
+      },
+    };
+
+    const agent = new AgentLoop({
+      model,
+      tools: [tool],
+      hooks: [hook1, hook2],
+    });
+    await agent.run('Test');
+
+    expect(order).toEqual(['hook2', 'hook1']);
+  });
+
+  it('stop hooks execute in reverse order, symmetric to userPromptSubmit', async () => {
+    const model = createMockModel([{ role: 'assistant', content: 'Original' }]);
+
+    const order: string[] = [];
+    const hook1: AgentLoopHooks = {
+      userPromptSubmit: async (ctx: UserPromptSubmitContext) => {
+        order.push('hook1.pre');
+        return { context: ctx };
+      },
+      stop: async (ctx: StopContext) => {
+        order.push('hook1.post');
+        return { context: ctx, result: 'hook1' };
+      },
+    };
+    const hook2: AgentLoopHooks = {
+      userPromptSubmit: async (ctx: UserPromptSubmitContext) => {
+        order.push('hook2.pre');
+        return { context: ctx };
+      },
+      stop: async (ctx: StopContext) => {
+        order.push('hook2.post');
+        return { context: ctx, result: 'hook2' };
+      },
+    };
+
+    const agent = new AgentLoop({ model, hooks: [hook1, hook2] });
+    const result = await agent.run('Hi');
+
+    expect(order).toEqual([
+      'hook1.pre',
+      'hook2.pre',
+      'hook2.post',
+      'hook1.post',
+    ]);
+    expect(result).toBe('hook1');
+  });
 });

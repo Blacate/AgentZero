@@ -21,10 +21,12 @@ async function executeHooks<TContext>(
   hooks: AgentLoopHooks[],
   method: keyof AgentLoopHooks,
   context: TContext,
+  reverse = false,
 ): Promise<{ context: TContext; result?: string }> {
   let result: string | undefined;
 
-  for (const hook of hooks) {
+  const ordered = reverse ? [...hooks].reverse() : hooks;
+  for (const hook of ordered) {
     const hookFn = hook[method];
     if (hookFn) {
       const hookResult = await (
@@ -47,17 +49,34 @@ export class AgentLoop {
   private systemPrompt?: string;
   private tools: Tool<z.ZodSchema>[];
   private hooks: AgentLoopHooks[];
+  private messages: ChatMessage[];
 
   constructor(config: AgentLoopConfig) {
     this.model = config.model;
     this.systemPrompt = config.systemPrompt;
     this.tools = config.tools ?? [];
     this.hooks = config.hooks ?? [];
+    this.messages = [];
+    if (this.systemPrompt) {
+      this.messages.push({ role: 'system', content: this.systemPrompt });
+    }
+  }
+
+  private syncSystemPrompt(systemPrompt?: string): void {
+    const index = this.messages.findIndex((m) => m.role === 'system');
+    if (systemPrompt) {
+      if (index >= 0) {
+        this.messages[index] = { role: 'system', content: systemPrompt };
+      } else {
+        this.messages.unshift({ role: 'system', content: systemPrompt });
+      }
+    } else if (index >= 0) {
+      this.messages.splice(index, 1);
+    }
+    this.systemPrompt = systemPrompt;
   }
 
   async run(userMessage: string): Promise<string> {
-    const messages: ChatMessage[] = [];
-
     // UserPromptSubmit hook
     if (this.hooks.length > 0) {
       const { context: ctx, result } = await executeHooks(
@@ -66,7 +85,7 @@ export class AgentLoop {
         {
           userMessage,
           systemPrompt: this.systemPrompt,
-          messages,
+          messages: this.messages,
         } as UserPromptSubmitContext,
       );
 
@@ -76,13 +95,12 @@ export class AgentLoop {
 
       userMessage = ctx.userMessage;
 
-      if (ctx.systemPrompt) {
-        messages.push({ role: 'system', content: ctx.systemPrompt });
+      if (ctx.systemPrompt !== this.systemPrompt) {
+        this.syncSystemPrompt(ctx.systemPrompt);
       }
-    } else if (this.systemPrompt) {
-      messages.push({ role: 'system', content: this.systemPrompt });
     }
 
+    const messages = this.messages;
     messages.push({ role: 'user', content: userMessage });
 
     const toolDefinitions = this.tools.map((t) => t.definition);
@@ -139,14 +157,19 @@ export class AgentLoop {
 
                 // PostToolUse hook
                 if (this.hooks.length > 0) {
-                  await executeHooks(this.hooks, 'postToolUse', {
-                    userMessage,
-                    toolName: toolCall.function.name,
-                    args,
-                    result,
-                    toolCallId: toolCall.id,
-                    messages,
-                  } as PostToolUseContext);
+                  await executeHooks(
+                    this.hooks,
+                    'postToolUse',
+                    {
+                      userMessage,
+                      toolName: toolCall.function.name,
+                      args,
+                      result,
+                      toolCallId: toolCall.id,
+                      messages,
+                    } as PostToolUseContext,
+                    true,
+                  );
                 }
               } catch (error) {
                 // PostToolUseFailure hook
@@ -166,6 +189,7 @@ export class AgentLoop {
                       toolCallId: toolCall.id,
                       messages,
                     } as PostToolUseFailureContext,
+                    true,
                   );
                   failureResult = failureHookResult;
                 }
@@ -193,11 +217,16 @@ export class AgentLoop {
       // Stop hook
       let finalResult = assistantMessage.content ?? '';
       if (this.hooks.length > 0) {
-        const { result: stopResult } = await executeHooks(this.hooks, 'stop', {
-          userMessage,
-          result: finalResult,
-          messages,
-        } as StopContext);
+        const { result: stopResult } = await executeHooks(
+          this.hooks,
+          'stop',
+          {
+            userMessage,
+            result: finalResult,
+            messages,
+          } as StopContext,
+          true,
+        );
         if (stopResult !== undefined) {
           finalResult = stopResult;
         }

@@ -43,6 +43,10 @@ You are an expert in JavaScript, Rspack, Rsbuild, Rslib, and library development
 - 避免过度设计，保持代码简洁易懂
 - 当前阶段以学习和验证思路为主，后续再逐步完善
 
+### Hook 执行顺序（洋葱模型）
+
+AgentLoop 的 hook 遵循洋葱模型：pre 类 hook（`userPromptSubmit`、`preToolUse`）按注册顺序正序执行，post 类 hook（`postToolUse`、`postToolUseFailure`、`stop`）按注册顺序倒序执行，与对应的 pre hook 形成对称。新增 hook 时应明确其归属并遵循该约定。
+
 ## Directory Conventions
 
 - `docs/plans/` — 用于存放相关的规划和设计文档
