@@ -8,6 +8,9 @@ import type {
   UserPromptSubmitContext,
 } from './hooks/index.js';
 import type { ChatMessage, Model } from './model.js';
+import { buildSkillPrompt } from './skills/prompt.js';
+import { scanSkills } from './skills/scan.js';
+import { createSkillTool } from './skills/skill-tool.js';
 import type { Tool } from './tools/tool.js';
 
 export interface AgentLoopConfig {
@@ -15,6 +18,8 @@ export interface AgentLoopConfig {
   systemPrompt?: string;
   tools?: Tool<z.ZodSchema>[];
   hooks?: AgentLoopHooks[];
+  /** 默认 true：扫描 <cwd>/.agents/skills；false 关闭；{ dir } 自定义目录（相对路径基于 cwd resolve） */
+  skills?: boolean | { dir?: string };
 }
 
 async function executeHooks<TContext>(
@@ -53,9 +58,29 @@ export class AgentLoop {
 
   constructor(config: AgentLoopConfig) {
     this.model = config.model;
-    this.systemPrompt = config.systemPrompt;
     this.tools = config.tools ?? [];
     this.hooks = config.hooks ?? [];
+
+    const skillsOption = config.skills ?? true;
+    if (skillsOption !== false) {
+      const dir =
+        typeof skillsOption === 'object' && skillsOption.dir
+          ? skillsOption.dir
+          : '.agents/skills';
+      const skills = scanSkills(dir);
+      if (skills.length > 0) {
+        const skillPrompt = buildSkillPrompt(skills);
+        this.systemPrompt = [config.systemPrompt, skillPrompt]
+          .filter(Boolean)
+          .join('\n\n');
+        this.tools.push(createSkillTool(skills));
+      } else {
+        this.systemPrompt = config.systemPrompt;
+      }
+    } else {
+      this.systemPrompt = config.systemPrompt;
+    }
+
     this.messages = [];
     if (this.systemPrompt) {
       this.messages.push({ role: 'system', content: this.systemPrompt });
