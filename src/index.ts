@@ -16,6 +16,12 @@ export {
   type ToolDefinition,
 } from './model.js';
 export {
+  buildSkillPrompt,
+  createSkillTool,
+  type SkillInfo,
+  scanSkills,
+} from './skills/index.js';
+export {
   globTool,
   grepTool,
   readTool,

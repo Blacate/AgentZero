@@ -38,6 +38,7 @@ describe('AgentLoop', () => {
     const agent = new AgentLoop({
       model,
       systemPrompt: 'You are helpful.',
+      skills: false,
     });
 
     await agent.run('Hi');
@@ -166,7 +167,7 @@ describe('AgentLoop', () => {
       run: (args) => String(args),
     });
 
-    const agent = new AgentLoop({ model, tools: [tool] });
+    const agent = new AgentLoop({ model, tools: [tool], skills: false });
     await agent.run('Hello');
 
     const [, passedTools] = model.invoke.mock.calls[0];
