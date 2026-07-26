@@ -14,6 +14,7 @@ import { buildSkillPrompt } from './skills/prompt.js';
 import { scanSkills } from './skills/scan.js';
 import { createSkillTool } from './skills/skill-tool.js';
 import type { Tool } from './tools/tool.js';
+import { buildWorkspacePrompt } from './workspace.js';
 
 export interface AgentLoopConfig {
   model: Model;
@@ -24,6 +25,8 @@ export interface AgentLoopConfig {
   projectGuide?: boolean | { path?: string };
   /** 默认 true：扫描 <cwd>/.agents/skills；false 关闭；{ dir } 自定义目录（相对路径基于 cwd resolve） */
   skills?: boolean | { dir?: string };
+  /** 默认 true：在 system prompt 中注入当前 cwd 信息 */
+  workspace?: boolean;
 }
 
 async function executeHooks<TContext>(
@@ -65,10 +68,16 @@ export class AgentLoop {
     this.tools = config.tools ?? [];
     this.hooks = config.hooks ?? [];
 
+    const workspacePrompt = this.resolveWorkspace(config.workspace);
     const projectGuidePrompt = this.resolveProjectGuide(config.projectGuide);
     const skillPrompt = this.resolveSkills(config.skills);
 
-    this.systemPrompt = [config.systemPrompt, projectGuidePrompt, skillPrompt]
+    this.systemPrompt = [
+      config.systemPrompt,
+      workspacePrompt,
+      projectGuidePrompt,
+      skillPrompt,
+    ]
       .filter(Boolean)
       .join('\n\n');
 
@@ -76,6 +85,12 @@ export class AgentLoop {
     if (this.systemPrompt) {
       this.messages.push({ role: 'system', content: this.systemPrompt });
     }
+  }
+
+  private resolveWorkspace(option: boolean | undefined): string {
+    const opt = option ?? true;
+    if (opt === false) return '';
+    return buildWorkspacePrompt();
   }
 
   private resolveProjectGuide(

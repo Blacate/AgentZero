@@ -83,6 +83,7 @@ describe('AgentLoop project guide', () => {
       systemPrompt: 'You are helpful.',
       skills: false,
       projectGuide: false,
+      workspace: false,
     });
     await agent.run('Hi');
 
@@ -102,6 +103,7 @@ describe('AgentLoop project guide', () => {
       systemPrompt: 'You are helpful.',
       skills: false,
       projectGuide: { path: join(dir, 'AGENTS.md') },
+      workspace: false,
     });
     await agent.run('Hi');
 
@@ -150,6 +152,7 @@ describe('AgentLoop project guide', () => {
       model,
       skills: false,
       projectGuide: { path: join(dir, 'AGENTS.md') },
+      workspace: false,
     });
     await agent.run('Hi');
 
@@ -172,6 +175,7 @@ describe('AgentLoop project guide', () => {
       systemPrompt: 'You are helpful.',
       skills: false,
       projectGuide: { path: join(dir, 'AGENTS.md') },
+      workspace: false,
       hooks: [
         {
           userPromptSubmit: async (ctx) => ({

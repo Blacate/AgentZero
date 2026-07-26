@@ -73,6 +73,7 @@ describe('AgentLoop skills', () => {
       systemPrompt: 'You are helpful.',
       skills: false,
       projectGuide: false,
+      workspace: false,
     });
     await agent.run('Hi');
 
@@ -94,6 +95,7 @@ describe('AgentLoop skills', () => {
       systemPrompt: 'You are helpful.',
       skills: { dir },
       projectGuide: false,
+      workspace: false,
     });
     await agent.run('Hi');
 
@@ -140,6 +142,7 @@ describe('AgentLoop skills', () => {
       model,
       skills: { dir },
       projectGuide: false,
+      workspace: false,
     });
     await agent.run('Hi');
 
