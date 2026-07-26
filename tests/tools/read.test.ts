@@ -12,7 +12,6 @@ describe('readTool', () => {
 
     const result = await readTool.execute({ path: filePath });
     expect(result).toBe('line1\nline2\nline3');
-
   });
 
   it('should slice with offset (1-based)', async () => {
@@ -22,7 +21,6 @@ describe('readTool', () => {
 
     const result = await readTool.execute({ path: filePath, offset: 2 });
     expect(result).toBe('b\nc\nd');
-
   });
 
   it('should slice with limit', async () => {
@@ -32,7 +30,6 @@ describe('readTool', () => {
 
     const result = await readTool.execute({ path: filePath, limit: 2 });
     expect(result).toBe('a\nb');
-
   });
 
   it('should slice with offset and limit together', async () => {
@@ -46,6 +43,5 @@ describe('readTool', () => {
       limit: 2,
     });
     expect(result).toBe('b\nc');
-
   });
 });

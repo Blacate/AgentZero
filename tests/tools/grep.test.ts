@@ -17,7 +17,6 @@ describe('grepTool', () => {
 
     expect(result).toContain('foo');
     expect(result).toContain('1:');
-
   });
 
   it('should return no matches message for non-matching pattern', async () => {
@@ -31,7 +30,6 @@ describe('grepTool', () => {
     });
 
     expect(result).toBe('(no matches)');
-
   });
 
   it('should filter by glob pattern', async () => {
@@ -47,6 +45,5 @@ describe('grepTool', () => {
 
     expect(result).toContain('a.ts');
     expect(result).not.toContain('b.js');
-
   });
 });

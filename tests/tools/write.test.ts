@@ -17,7 +17,6 @@ describe('writeTool', () => {
 
     const content = await readFile(filePath, 'utf-8');
     expect(content).toBe('hello');
-
   });
 
   it('should create parent directories automatically', async () => {
@@ -32,7 +31,6 @@ describe('writeTool', () => {
 
     const content = await readFile(filePath, 'utf-8');
     expect(content).toBe('nested content');
-
   });
 
   it('should overwrite existing file', async () => {
@@ -44,6 +42,5 @@ describe('writeTool', () => {
 
     const content = await readFile(filePath, 'utf-8');
     expect(content).toBe('second');
-
   });
 });
