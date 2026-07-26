@@ -390,7 +390,12 @@ describe('AgentLoop hooks', () => {
       },
     };
 
-    const agent = new AgentLoop({ model, hooks: [hook], skills: false });
+    const agent = new AgentLoop({
+      model,
+      hooks: [hook],
+      skills: false,
+      projectGuide: false,
+    });
     await agent.run('Hi');
 
     const [messages] = model.invoke.mock.calls[0];
@@ -407,7 +412,12 @@ describe('AgentLoop hooks', () => {
       },
     };
 
-    const agent = new AgentLoop({ model, hooks: [hook], skills: false });
+    const agent = new AgentLoop({
+      model,
+      hooks: [hook],
+      skills: false,
+      projectGuide: false,
+    });
     await agent.run('Hi');
 
     const [messages] = model.invoke.mock.calls[0];
@@ -462,6 +472,7 @@ describe('AgentLoop hooks', () => {
       model,
       systemPrompt: 'You are helpful',
       skills: false,
+      projectGuide: false,
     });
     await agent.run('Hi');
     await agent.run('Again');

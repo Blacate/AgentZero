@@ -15,6 +15,7 @@ export {
   type ToolCall,
   type ToolDefinition,
 } from './model.js';
+export { buildProjectGuidePrompt } from './project-guide.js';
 export {
   buildSkillPrompt,
   createSkillTool,

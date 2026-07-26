@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import type { z } from 'zod';
 import type {
   AgentLoopHooks,
@@ -8,6 +9,7 @@ import type {
   UserPromptSubmitContext,
 } from './hooks/index.js';
 import type { ChatMessage, Model } from './model.js';
+import { buildProjectGuidePrompt } from './project-guide.js';
 import { buildSkillPrompt } from './skills/prompt.js';
 import { scanSkills } from './skills/scan.js';
 import { createSkillTool } from './skills/skill-tool.js';
@@ -18,6 +20,8 @@ export interface AgentLoopConfig {
   systemPrompt?: string;
   tools?: Tool<z.ZodSchema>[];
   hooks?: AgentLoopHooks[];
+  /** 默认 true：读取 <cwd>/AGENTS.md；false 关闭；{ path } 自定义路径（相对路径基于 cwd resolve） */
+  projectGuide?: boolean | { path?: string };
   /** 默认 true：扫描 <cwd>/.agents/skills；false 关闭；{ dir } 自定义目录（相对路径基于 cwd resolve） */
   skills?: boolean | { dir?: string };
 }
@@ -61,6 +65,19 @@ export class AgentLoop {
     this.tools = config.tools ?? [];
     this.hooks = config.hooks ?? [];
 
+    // 1. 读取 project guide
+    let projectGuidePrompt = '';
+    const projectGuideOption = config.projectGuide ?? true;
+    if (projectGuideOption !== false) {
+      const guidePath =
+        typeof projectGuideOption === 'object' && projectGuideOption.path
+          ? projectGuideOption.path
+          : 'AGENTS.md';
+      projectGuidePrompt = buildProjectGuidePrompt(resolve(guidePath));
+    }
+
+    // 2. 读取 skills
+    let skillPrompt = '';
     const skillsOption = config.skills ?? true;
     if (skillsOption !== false) {
       const dir =
@@ -69,17 +86,14 @@ export class AgentLoop {
           : '.agents/skills';
       const skills = scanSkills(dir);
       if (skills.length > 0) {
-        const skillPrompt = buildSkillPrompt(skills);
-        this.systemPrompt = [config.systemPrompt, skillPrompt]
-          .filter(Boolean)
-          .join('\n\n');
+        skillPrompt = buildSkillPrompt(skills);
         this.tools.push(createSkillTool(skills));
-      } else {
-        this.systemPrompt = config.systemPrompt;
       }
-    } else {
-      this.systemPrompt = config.systemPrompt;
     }
+
+    this.systemPrompt = [config.systemPrompt, projectGuidePrompt, skillPrompt]
+      .filter(Boolean)
+      .join('\n\n');
 
     this.messages = [];
     if (this.systemPrompt) {

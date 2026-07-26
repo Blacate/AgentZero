@@ -16,7 +16,6 @@ describe('globTool', () => {
     expect(lines).toHaveLength(2);
     expect(lines).toContain('a.txt');
     expect(lines).toContain('b.txt');
-
   });
 
   it('should return no matches message when empty', async () => {
@@ -24,6 +23,5 @@ describe('globTool', () => {
 
     const result = await globTool.execute({ pattern: '*.md', cwd: tmpDir });
     expect(result).toBe('(no matches)');
-
   });
 });

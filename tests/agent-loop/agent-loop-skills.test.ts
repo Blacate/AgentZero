@@ -48,6 +48,7 @@ describe('AgentLoop skills', () => {
       model,
       systemPrompt: 'You are helpful.',
       skills: { dir },
+      projectGuide: false,
     });
     await agent.run('Hi');
 
@@ -71,6 +72,7 @@ describe('AgentLoop skills', () => {
       model,
       systemPrompt: 'You are helpful.',
       skills: false,
+      projectGuide: false,
     });
     await agent.run('Hi');
 
@@ -91,6 +93,7 @@ describe('AgentLoop skills', () => {
       model,
       systemPrompt: 'You are helpful.',
       skills: { dir },
+      projectGuide: false,
     });
     await agent.run('Hi');
 
@@ -112,6 +115,7 @@ describe('AgentLoop skills', () => {
       model,
       systemPrompt: 'You are helpful.',
       skills: { dir },
+      projectGuide: false,
       hooks: [
         {
           userPromptSubmit: async (ctx) => ({
@@ -132,7 +136,11 @@ describe('AgentLoop skills', () => {
     ]);
     const model = createMockModel([{ role: 'assistant', content: 'OK' }]);
 
-    const agent = new AgentLoop({ model, skills: { dir } });
+    const agent = new AgentLoop({
+      model,
+      skills: { dir },
+      projectGuide: false,
+    });
     await agent.run('Hi');
 
     const [messages] = model.invoke.mock.calls[0];
@@ -163,7 +171,11 @@ describe('AgentLoop skills', () => {
       { role: 'assistant', content: 'Loaded.' },
     ]);
 
-    const agent = new AgentLoop({ model, skills: { dir } });
+    const agent = new AgentLoop({
+      model,
+      skills: { dir },
+      projectGuide: false,
+    });
     const result = await agent.run('Use tdd');
 
     expect(result).toBe('Loaded.');
