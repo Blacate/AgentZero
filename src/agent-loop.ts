@@ -65,31 +65,8 @@ export class AgentLoop {
     this.tools = config.tools ?? [];
     this.hooks = config.hooks ?? [];
 
-    // 1. 读取 project guide
-    let projectGuidePrompt = '';
-    const projectGuideOption = config.projectGuide ?? true;
-    if (projectGuideOption !== false) {
-      const guidePath =
-        typeof projectGuideOption === 'object' && projectGuideOption.path
-          ? projectGuideOption.path
-          : 'AGENTS.md';
-      projectGuidePrompt = buildProjectGuidePrompt(resolve(guidePath));
-    }
-
-    // 2. 读取 skills
-    let skillPrompt = '';
-    const skillsOption = config.skills ?? true;
-    if (skillsOption !== false) {
-      const dir =
-        typeof skillsOption === 'object' && skillsOption.dir
-          ? skillsOption.dir
-          : '.agents/skills';
-      const skills = scanSkills(dir);
-      if (skills.length > 0) {
-        skillPrompt = buildSkillPrompt(skills);
-        this.tools.push(createSkillTool(skills));
-      }
-    }
+    const projectGuidePrompt = this.resolveProjectGuide(config.projectGuide);
+    const skillPrompt = this.resolveSkills(config.skills);
 
     this.systemPrompt = [config.systemPrompt, projectGuidePrompt, skillPrompt]
       .filter(Boolean)
@@ -99,6 +76,28 @@ export class AgentLoop {
     if (this.systemPrompt) {
       this.messages.push({ role: 'system', content: this.systemPrompt });
     }
+  }
+
+  private resolveProjectGuide(
+    option: boolean | { path?: string } | undefined,
+  ): string {
+    const opt = option ?? true;
+    if (opt === false) return '';
+    const guidePath =
+      typeof opt === 'object' && opt.path ? opt.path : 'AGENTS.md';
+    return buildProjectGuidePrompt(resolve(guidePath));
+  }
+
+  private resolveSkills(
+    option: boolean | { dir?: string } | undefined,
+  ): string {
+    const opt = option ?? true;
+    if (opt === false) return '';
+    const dir = typeof opt === 'object' && opt.dir ? opt.dir : '.agents/skills';
+    const skills = scanSkills(dir);
+    if (skills.length === 0) return '';
+    this.tools.push(createSkillTool(skills));
+    return buildSkillPrompt(skills);
   }
 
   private syncSystemPrompt(systemPrompt?: string): void {
