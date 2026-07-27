@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { dirname } from 'node:path';
 import matter from 'gray-matter';
 import { z } from 'zod';
 import { Tool } from '../tools/tool.js';
@@ -23,7 +24,8 @@ export function createSkillTool(
 
       const raw = await readFile(skill.path, 'utf-8');
       const { content } = matter(raw);
-      return content.trim();
+      const baseDir = dirname(skill.path);
+      return `Base directory for this skill: ${baseDir}\n\n${content.trim()}`;
     },
   });
 }

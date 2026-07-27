@@ -1,6 +1,6 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { describe, expect, it } from '@rstest/core';
 import { createSkillTool } from '../../src/skills/skill-tool.js';
 import type { SkillInfo } from '../../src/skills/types.js';
@@ -24,7 +24,10 @@ describe('createSkillTool', () => {
 
     const result = await tool.execute({ name: 'tdd' });
 
-    expect(result).toBe('Follow red-green-refactor.');
+    const skillDir = dirname(skill.path);
+    expect(result).toBe(
+      `Base directory for this skill: ${skillDir}\n\nFollow red-green-refactor.`,
+    );
     expect(result).not.toContain('---');
   });
 
