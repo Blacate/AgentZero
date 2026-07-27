@@ -187,6 +187,8 @@ describe('AgentLoop skills', () => {
     const toolMessage = secondMessages.find(
       (m: ChatMessage) => m.role === 'tool',
     );
-    expect(toolMessage?.content).toBe('Follow TDD.');
+    expect(toolMessage?.content).toBe(
+      `Base directory for this skill: ${join(dir, 'tdd')}\n\nFollow TDD.`,
+    );
   });
 });
