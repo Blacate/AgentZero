@@ -40,6 +40,7 @@ describe('AgentLoop', () => {
       systemPrompt: 'You are helpful.',
       skills: false,
       projectGuide: false,
+      workspace: false,
     });
 
     await agent.run('Hi');
@@ -173,6 +174,7 @@ describe('AgentLoop', () => {
       tools: [tool],
       skills: false,
       projectGuide: false,
+      workspace: false,
     });
     await agent.run('Hello');
 

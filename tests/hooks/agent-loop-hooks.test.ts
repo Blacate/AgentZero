@@ -395,6 +395,7 @@ describe('AgentLoop hooks', () => {
       hooks: [hook],
       skills: false,
       projectGuide: false,
+      workspace: false,
     });
     await agent.run('Hi');
 
@@ -417,6 +418,7 @@ describe('AgentLoop hooks', () => {
       hooks: [hook],
       skills: false,
       projectGuide: false,
+      workspace: false,
     });
     await agent.run('Hi');
 
@@ -473,6 +475,7 @@ describe('AgentLoop hooks', () => {
       systemPrompt: 'You are helpful',
       skills: false,
       projectGuide: false,
+      workspace: false,
     });
     await agent.run('Hi');
     await agent.run('Again');
