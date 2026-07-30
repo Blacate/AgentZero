@@ -1,7 +1,13 @@
 import type { z } from 'zod';
 import type { ToolDefinition } from '../model.js';
 
-export class Tool<T extends z.ZodSchema> {
+export interface ToolLike {
+  readonly name: string;
+  readonly definition: ToolDefinition;
+  execute(args: Record<string, unknown>): Promise<string>;
+}
+
+export class Tool<T extends z.ZodSchema> implements ToolLike {
   readonly name: string;
   readonly description: string;
   readonly schema: T;
