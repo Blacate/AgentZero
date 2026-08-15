@@ -9,6 +9,14 @@ export type {
   UserPromptSubmitContext,
 } from './hooks/index.js';
 export {
+  type McpCallContent,
+  type McpCallResult,
+  McpClient,
+  type McpServerConfig,
+  McpTool,
+  type McpToolInfo,
+} from './mcp/index.js';
+export {
   type ChatMessage,
   Model,
   type ModelConfig,
@@ -27,6 +35,7 @@ export {
   grepTool,
   readTool,
   Tool,
+  type ToolLike,
   webFetchTool,
   writeTool,
 } from './tools/index.js';

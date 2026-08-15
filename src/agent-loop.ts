@@ -1,5 +1,4 @@
 import { resolve } from 'node:path';
-import type { z } from 'zod';
 import type {
   AgentLoopHooks,
   PostToolUseContext,
@@ -8,18 +7,21 @@ import type {
   StopContext,
   UserPromptSubmitContext,
 } from './hooks/index.js';
+import { McpClient } from './mcp/client.js';
+import { McpTool } from './mcp/mcp-tool.js';
+import type { McpServerConfig } from './mcp/types.js';
 import type { ChatMessage, Model } from './model.js';
 import { buildProjectGuidePrompt } from './project-guide.js';
 import { buildSkillPrompt } from './skills/prompt.js';
 import { scanSkills } from './skills/scan.js';
 import { createSkillTool } from './skills/skill-tool.js';
-import type { Tool } from './tools/tool.js';
+import type { ToolLike } from './tools/tool.js';
 import { buildWorkspacePrompt } from './workspace.js';
 
 export interface AgentLoopConfig {
   model: Model;
   systemPrompt?: string;
-  tools?: Tool<z.ZodSchema>[];
+  tools?: ToolLike[];
   hooks?: AgentLoopHooks[];
   /** 默认 true：读取 <cwd>/AGENTS.md；false 关闭；{ path } 自定义路径（相对路径基于 cwd resolve） */
   projectGuide?: boolean | { path?: string };
@@ -27,7 +29,11 @@ export interface AgentLoopConfig {
   skills?: boolean | { dir?: string };
   /** 默认 true：在 system prompt 中注入当前 cwd 信息 */
   workspace?: boolean;
+  /** stdio MCP server 配置，key 为 server 名称 */
+  mcpServers?: Record<string, McpServerConfig>;
 }
+
+type AgentLoopOptions = Omit<AgentLoopConfig, 'model' | 'tools' | 'hooks'>;
 
 async function executeHooks<TContext>(
   hooks: AgentLoopHooks[],
@@ -57,23 +63,39 @@ async function executeHooks<TContext>(
 }
 
 export class AgentLoop {
-  private model: Model;
+  private readonly model: Model;
+  private readonly options: AgentLoopOptions;
+  private readonly tools: ToolLike[];
+  private readonly hooks: AgentLoopHooks[];
+  private readonly messages: ChatMessage[] = [];
+  private readonly mcpClients: McpClient[] = [];
   private systemPrompt?: string;
-  private tools: Tool<z.ZodSchema>[];
-  private hooks: AgentLoopHooks[];
-  private messages: ChatMessage[];
+  private initialization?: Promise<void>;
 
   constructor(config: AgentLoopConfig) {
-    this.model = config.model;
-    this.tools = config.tools ?? [];
-    this.hooks = config.hooks ?? [];
+    const { model, tools = [], hooks = [], ...options } = config;
+    this.model = model;
+    this.options = options;
+    this.tools = [...tools];
+    this.hooks = [...hooks];
+  }
 
-    const workspacePrompt = this.resolveWorkspace(config.workspace);
-    const projectGuidePrompt = this.resolveProjectGuide(config.projectGuide);
-    const skillPrompt = this.resolveSkills(config.skills);
+  /** 初始化：构建 system prompt + 连接 MCP server。幂等。 */
+  init(): Promise<void> {
+    this.initialization ??= this.initialize();
+    return this.initialization;
+  }
+
+  private async initialize(): Promise<void> {
+    const workspacePrompt = this.resolveWorkspace(this.options.workspace);
+    const projectGuidePrompt = this.resolveProjectGuide(
+      this.options.projectGuide,
+    );
+    const skillPrompt = this.resolveSkills(this.options.skills);
+    await this.initMcpServers();
 
     this.systemPrompt = [
-      config.systemPrompt,
+      this.options.systemPrompt,
       workspacePrompt,
       projectGuidePrompt,
       skillPrompt,
@@ -81,9 +103,45 @@ export class AgentLoop {
       .filter(Boolean)
       .join('\n\n');
 
-    this.messages = [];
     if (this.systemPrompt) {
       this.messages.push({ role: 'system', content: this.systemPrompt });
+    }
+  }
+
+  /** 连接所有 MCP server，注册工具 */
+  private async initMcpServers(): Promise<void> {
+    if (!this.options.mcpServers) return;
+    for (const [name, config] of Object.entries(this.options.mcpServers)) {
+      let client: McpClient | undefined;
+      try {
+        client = new McpClient(config);
+        await client.initialize();
+        const tools = await client.toolsList();
+        this.mcpClients.push(client);
+        for (const tool of tools) {
+          this.tools.push(
+            new McpTool({
+              serverName: name,
+              toolName: tool.name,
+              description: tool.description ?? '',
+              inputSchema: tool.inputSchema ?? {},
+              client,
+            }),
+          );
+        }
+      } catch (e) {
+        client?.close();
+        console.warn(
+          `[agent-zero] MCP server "${name}" failed to start: ${e instanceof Error ? e.message : e}`,
+        );
+      }
+    }
+  }
+
+  /** 清理 MCP 子进程 */
+  close(): void {
+    for (const client of this.mcpClients.splice(0)) {
+      client.close();
     }
   }
 
@@ -130,6 +188,8 @@ export class AgentLoop {
   }
 
   async run(userMessage: string): Promise<string> {
+    await this.init();
+
     // UserPromptSubmit hook
     if (this.hooks.length > 0) {
       const { context: ctx, result } = await executeHooks(
