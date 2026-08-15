@@ -24,9 +24,11 @@ export class McpClient {
     this.proc = proc;
 
     if (!proc.stdout || !proc.stdin) {
+      proc.kill();
       throw new Error('Failed to get MCP server stdio streams');
     }
     this.stdin = proc.stdin;
+    proc.stderr?.resume();
 
     proc.stdout.setEncoding('utf-8');
     proc.stdout.on('data', (data: string) => {
@@ -45,27 +47,34 @@ export class McpClient {
       }
     });
 
-    proc.on('error', (err: Error) => {
-      for (const pending of this.pending.values()) {
-        pending.reject(err);
-      }
-      this.pending.clear();
+    proc.stdin.on('error', (error: Error) => {
+      this.handleDisconnect(proc, error);
     });
 
-    proc.on('exit', () => {
-      for (const pending of this.pending.values()) {
-        pending.reject(new Error('MCP server process exited'));
-      }
-      this.pending.clear();
+    proc.on('error', (error: Error) => {
+      this.handleDisconnect(proc, error);
     });
 
-    await this.request('initialize', {
-      protocolVersion: '2024-11-05',
-      capabilities: {},
-      clientInfo: { name: 'agent-zero', version: '1.0.0' },
+    proc.on('exit', (code, signal) => {
+      const detail = signal ? `signal ${signal}` : `code ${code ?? 'unknown'}`;
+      this.handleDisconnect(
+        proc,
+        new Error(`MCP server process exited with ${detail}`),
+      );
     });
 
-    this.notify('notifications/initialized', {});
+    try {
+      await this.request('initialize', {
+        protocolVersion: '2024-11-05',
+        capabilities: {},
+        clientInfo: { name: 'agent-zero', version: '1.0.0' },
+      });
+
+      this.notify('notifications/initialized', {});
+    } catch (error) {
+      this.close();
+      throw error;
+    }
   }
 
   async toolsList(): Promise<McpToolInfo[]> {
@@ -87,15 +96,13 @@ export class McpClient {
   }
 
   close(): void {
-    if (this.proc) {
-      this.proc.kill();
-      this.proc = null;
-    }
+    const proc = this.proc;
+    this.proc = null;
     this.stdin = null;
-    for (const pending of this.pending.values()) {
-      pending.reject(new Error('MCP client closed'));
+    this.rejectPending(new Error('MCP client closed'));
+    if (proc && !proc.killed) {
+      proc.kill();
     }
-    this.pending.clear();
   }
 
   private request(
@@ -103,7 +110,8 @@ export class McpClient {
     params: Record<string, unknown>,
   ): Promise<unknown> {
     return new Promise((resolve, reject) => {
-      if (!this.stdin) {
+      const stdin = this.stdin;
+      if (!stdin?.writable || stdin.destroyed) {
         reject(new Error('MCP client not initialized'));
         return;
       }
@@ -111,14 +119,37 @@ export class McpClient {
       this.pending.set(id, { resolve, reject });
 
       const msg = JSON.stringify({ jsonrpc: '2.0', id, method, params });
-      this.stdin.write(`${msg}\n`);
+      stdin.write(`${msg}\n`, (error?: Error | null) => {
+        if (!error) return;
+        const pending = this.pending.get(id);
+        if (!pending) return;
+        this.pending.delete(id);
+        pending.reject(error);
+      });
     });
   }
 
   private notify(method: string, params: Record<string, unknown>): void {
-    if (!this.stdin) return;
+    if (!this.stdin?.writable || this.stdin.destroyed) return;
     const msg = JSON.stringify({ jsonrpc: '2.0', method, params });
     this.stdin.write(`${msg}\n`);
+  }
+
+  private handleDisconnect(proc: ReturnType<typeof spawn>, error: Error): void {
+    if (this.proc !== proc) return;
+    this.proc = null;
+    this.stdin = null;
+    this.rejectPending(error);
+    if (!proc.killed) {
+      proc.kill();
+    }
+  }
+
+  private rejectPending(error: Error): void {
+    for (const pending of this.pending.values()) {
+      pending.reject(error);
+    }
+    this.pending.clear();
   }
 
   private handleMessage(msg: {

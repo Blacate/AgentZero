@@ -1,8 +1,18 @@
-import { resolve } from 'node:path';
+import { existsSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { afterEach, describe, expect, it } from '@rstest/core';
 import { McpClient } from '../../src/mcp/client.js';
 
 const mockServerPath = resolve('tests/fixtures/mock-mcp-server.mjs');
+
+async function waitForFile(path: string): Promise<void> {
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    if (existsSync(path)) return;
+    await new Promise((resolveWait) => setTimeout(resolveWait, 10));
+  }
+  throw new Error(`Timed out waiting for ${path}`);
+}
 
 describe('McpClient', () => {
   const clients: McpClient[] = [];
@@ -91,5 +101,26 @@ describe('McpClient', () => {
     });
     clients.push(client);
     await expect(client.initialize()).rejects.toThrow();
+  });
+
+  it('C7: requests reject after the server process exits', async () => {
+    const sentinel = join(
+      mkdtempSync(join(tmpdir(), 'agent-zero-mcp-')),
+      'exited',
+    );
+    const client = new McpClient({
+      command: 'node',
+      args: [mockServerPath],
+      env: {
+        MOCK_MCP_EXIT_AFTER_INITIALIZE: '1',
+        MOCK_MCP_EXIT_SENTINEL: sentinel,
+      },
+    });
+    clients.push(client);
+
+    await client.initialize();
+    await waitForFile(sentinel);
+
+    await expect(client.toolsList()).rejects.toThrow();
   });
 });

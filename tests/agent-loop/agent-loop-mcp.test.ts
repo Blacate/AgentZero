@@ -1,11 +1,21 @@
-import { resolve } from 'node:path';
+import { existsSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { afterEach, describe, expect, it, rs } from '@rstest/core';
 import { z } from 'zod';
 import { AgentLoop } from '../../src/agent-loop.js';
 import type { ChatMessage, Model, ToolDefinition } from '../../src/model.js';
-import { Tool } from '../../src/tools/tool.js';
+import { Tool, type ToolLike } from '../../src/tools/tool.js';
 
 const mockServerPath = resolve('tests/fixtures/mock-mcp-server.mjs');
+
+async function waitForFile(path: string): Promise<void> {
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    if (existsSync(path)) return;
+    await new Promise((resolveWait) => setTimeout(resolveWait, 10));
+  }
+  throw new Error(`Timed out waiting for ${path}`);
+}
 
 function createMockModel(
   responses: ChatMessage[],
@@ -227,5 +237,96 @@ describe('AgentLoop MCP integration', () => {
       (m: ChatMessage) => m.role === 'tool',
     );
     expect(toolMessage?.content).toBe('intercepted by hook');
+  });
+
+  it('A7: overlapping init() calls wait for the same initialization', async () => {
+    const sentinel = join(
+      mkdtempSync(join(tmpdir(), 'agent-zero-mcp-')),
+      'ready',
+    );
+    const model = createMockModel([{ role: 'assistant', content: 'OK' }]);
+    const agent = new AgentLoop({
+      model,
+      mcpServers: {
+        test: {
+          command: 'node',
+          args: [mockServerPath],
+          env: {
+            MOCK_MCP_TOOLS_LIST_DELAY: '50',
+            MOCK_MCP_TOOLS_LIST_SENTINEL: sentinel,
+          },
+        },
+      },
+      skills: false,
+      projectGuide: false,
+      workspace: false,
+    });
+    agents.push(agent);
+
+    const firstInit = agent.init();
+    const secondInit = agent.init();
+    await secondInit;
+    const secondWaitedForTools = existsSync(sentinel);
+    await firstInit;
+
+    expect(secondWaitedForTools).toBe(true);
+  });
+
+  it('A8: initialization does not mutate the provided tools array', async () => {
+    const providedTools: ToolLike[] = [];
+    const model = createMockModel([{ role: 'assistant', content: 'OK' }]);
+    const agent = new AgentLoop({
+      model,
+      tools: providedTools,
+      mcpServers: { test: { command: 'node', args: [mockServerPath] } },
+      skills: false,
+      projectGuide: false,
+      workspace: false,
+    });
+    agents.push(agent);
+
+    await agent.run('Hi');
+
+    expect(providedTools).toHaveLength(0);
+    const [, tools] = model.invoke.mock.calls[0];
+    expect(tools).toHaveLength(2);
+  });
+
+  it('A9: a client is closed when tool discovery fails', async () => {
+    const sentinel = join(
+      mkdtempSync(join(tmpdir(), 'agent-zero-mcp-')),
+      'exited',
+    );
+    const warnSpy = rs.fn();
+    const originalWarn = console.warn;
+    console.warn = warnSpy;
+
+    try {
+      const model = createMockModel([{ role: 'assistant', content: 'OK' }]);
+      const agent = new AgentLoop({
+        model,
+        mcpServers: {
+          broken: {
+            command: 'node',
+            args: [mockServerPath],
+            env: {
+              MOCK_MCP_FAIL_TOOLS_LIST: '1',
+              MOCK_MCP_EXIT_SENTINEL: sentinel,
+            },
+          },
+        },
+        skills: false,
+        projectGuide: false,
+        workspace: false,
+      });
+      agents.push(agent);
+
+      await agent.run('Hi');
+      await waitForFile(sentinel);
+
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      console.warn = originalWarn;
+    }
   });
 });

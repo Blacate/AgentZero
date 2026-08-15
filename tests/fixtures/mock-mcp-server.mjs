@@ -1,3 +1,4 @@
+import { writeFileSync } from 'node:fs';
 import * as readline from 'node:readline';
 
 const rl = readline.createInterface({
@@ -49,15 +50,37 @@ rl.on('line', (line) => {
           serverInfo: { name: 'mock-mcp-server', version: '1.0.0' },
         },
       });
+      if (process.env.MOCK_MCP_EXIT_AFTER_INITIALIZE === '1') {
+        setImmediate(() => process.exit(0));
+      }
       return;
     }
 
     if (msg.method === 'tools/list') {
-      send({
-        jsonrpc: '2.0',
-        id: msg.id,
-        result: { tools },
-      });
+      if (process.env.MOCK_MCP_FAIL_TOOLS_LIST === '1') {
+        send({
+          jsonrpc: '2.0',
+          id: msg.id,
+          error: { code: -32603, message: 'tools/list failed' },
+        });
+        return;
+      }
+      const respond = () => {
+        if (process.env.MOCK_MCP_TOOLS_LIST_SENTINEL) {
+          writeFileSync(process.env.MOCK_MCP_TOOLS_LIST_SENTINEL, 'ready');
+        }
+        send({
+          jsonrpc: '2.0',
+          id: msg.id,
+          result: { tools },
+        });
+      };
+      const delay = Number(process.env.MOCK_MCP_TOOLS_LIST_DELAY ?? 0);
+      if (delay > 0) {
+        setTimeout(respond, delay);
+      } else {
+        respond();
+      }
       return;
     }
 
@@ -106,3 +129,11 @@ rl.on('line', (line) => {
     return;
   }
 });
+
+process.on('exit', () => {
+  if (process.env.MOCK_MCP_EXIT_SENTINEL) {
+    writeFileSync(process.env.MOCK_MCP_EXIT_SENTINEL, 'exited');
+  }
+});
+
+process.on('SIGTERM', () => process.exit(0));
